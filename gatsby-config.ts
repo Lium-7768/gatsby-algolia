@@ -1,28 +1,50 @@
-import type { GatsbyConfig } from "gatsby";
+require("dotenv").config({
+  path: `.env.${process.env.NODE_ENV}`,
+});
 
-const config: GatsbyConfig = {
-  siteMetadata: {
-    title: `gatsby-algolia`,
-    siteUrl: `https://www.yourdomain.tld`
-  },
-  // More easily incorporate content into your pages through automatic TypeScript type generation and better GraphQL IntelliSense.
-  // If you use VSCode you can also use the GraphQL plugin
-  // Learn more at: https://gatsby.dev/graphql-typegen
-  graphqlTypegen: true,
-  plugins: [{
-    resolve: 'gatsby-source-contentful',
-    options: {
-      "accessToken": "",
-      "spaceId": ""
+const query = `
+  {
+    allSitePage {
+      nodes {
+        id
+        internal {
+          contentDigest
+        }
+        path
+      }
     }
-  }, "gatsby-plugin-image", "gatsby-plugin-sharp", "gatsby-transformer-sharp", "gatsby-plugin-sass", {
-    resolve: 'gatsby-source-filesystem',
-    options: {
-      "name": "images",
-      "path": "./src/images/"
-    },
-    __key: "images"
-  }]
-};
+  }
+`;
 
-export default config;
+const queries = [
+  {
+    query,
+    transformer: ({ data }) => data.allSitePage.nodes,
+    // optional
+    // indexName: 'pages',
+    // optional
+    settings: {
+      attributesToSnippet: ["path:5"],
+    },
+  },
+];
+
+module.exports = {
+  siteMetadata: {
+    title: "Gatsby Algolia Example",
+  },
+  plugins: [
+    {
+      // in real life this would be:
+      // resolve: 'gatsby-plugin-algolia',
+      resolve: require.resolve("../"),
+      options: {
+        appId: process.env.ALGOLIA_APPID,
+        apiKey: process.env.ALGOLIA_APIKEY,
+        indexName: process.env.ALGOLIA_INDEXNAME, // for all queries
+        queries,
+        chunkSize: 10000, // default: 1000
+      },
+    },
+  ],
+};
